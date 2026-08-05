@@ -1,7 +1,7 @@
 interface:
   display_name: "Article Archiver"
   short_description: "将公众号和网页文章归档到 Obsidian 知识库"
-  default_prompt: "Use $article-archiver to save this article into the right Obsidian knowledge folder with summary notes and entry-page links."
+  default_prompt: "使用 $article-archiver，把这篇文章转存到合适的 Obsidian 知识库目录，并生成摘要、核心要点和入口页链接。"
 
 policy:
   allow_implicit_invocation: true

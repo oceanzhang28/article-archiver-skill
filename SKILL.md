@@ -1,6 +1,6 @@
 ---
 name: article-archiver
-description: "Use when the user asks to archive, save, transfer, or batch-import WeChat public-account articles, web articles, article links, Feishu documents, or long text into Obsidian knowledge folders with complete original body, summaries, and entry-page links."
+description: "Use when the user asks to archive, save, transfer, or batch-import WeChat public-account articles, web articles, article links, Feishu documents, screenshots/chat records via OCR, knowledge cards, or long text into Obsidian knowledge folders with complete original body, summaries, and entry-page links."
 ---
 
 # Article Archiver
@@ -66,6 +66,8 @@ When the user provides a Feishu document URL (feishu.cn/wiki/... or feishu.cn/do
 5. **Save to Obsidian**: Classify the document (see Classify Destination below). Internal company docs go to `01工作区/<project>/`. Skip the article template (no 摘要/核心要点/快速判断) — these are raw work documents — but do add YAML frontmatter with title, source, date, url, and relevant tags.
 6. **Verify**: Confirm the file was written correctly with the full content preserved.
 
+### Excel or CSV Batches
+
 If the user provides a batch file, read article title and URL columns, extract each article independently, then update entry pages after all article files are ready. Do not add duplicate links if the same title or path already exists.
 
 Batch mode must not lower note quality. For every article, read enough of the full body to understand the thesis, evidence, examples, middle sections, and conclusion before writing `## 摘要` and `## 核心要点`. Never generate summaries by copying the opening paragraphs or using a generic template such as `文章围绕“标题”展开`. If there is not enough time to write real summaries for the full batch, archive fewer articles and continue later rather than writing low-quality notes.
@@ -82,7 +84,7 @@ Classify by **WeChat public account** (the `nickname` JS variable), not just by 
 | 卡兹克 | Author is 卡兹克 / 数字生命卡兹克, or the article belongs to that author collection | `00知识库/卡兹克/` |
 | 工作文档 | Internal company documents: meeting notes, project docs, BP reviews, HR operational docs | `01工作区/<project>/` |
 
-Priority: if an article is both 卡兹克 and AI, classify it under 卡兹克 first. Then choose the most relevant 卡兹克 subfolder. If an article is both AI and HR, classify by the main reader problem: AI tool/workflow/product learning goes to AI; HR organization/talent/workforce problems go to HR. If an article is both business and HR or AI, classify by the dominant topic, not by incidental examples.
+Priority: if an article is authored by 卡兹克 / 数字生命卡兹克, classify it under 卡兹克 first. Then choose the most relevant 卡兹克 subfolder. If a WeChat account has an explicit mapping in `references/classification-by-account.md`, follow that mapping unless the user overrides it. If an article is both AI and HR, classify by the main reader problem: AI tool/workflow/product learning goes to AI; HR organization/talent/workforce problems go to HR. If an article is both business and HR or AI, classify by the dominant topic, not by incidental examples.
 
 For internal company documents (工作文档), place them under `01工作区/<project>/` using the project name as folder — e.g. `01工作区/全棉时代/`, `01工作区/固生堂/`. These are raw work documents: skip the article template (no 摘要/核心要点/快速判断 sections), but always include YAML frontmatter with title, source, date, url, and relevant tags. Preserve the full original body.
 
