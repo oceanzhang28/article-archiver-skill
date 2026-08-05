@@ -23,6 +23,8 @@ Do not repeat the title as the first sentence. Do not add claims not supported b
 
 Do not use the article's opening paragraphs as the summary. Before writing, inspect the article's beginning, section headings, middle examples, and conclusion. The summary must synthesize the whole article, not merely restate the lead.
 
+**Count the draft BEFORE assembling the file**: target is 150-250 Chinese characters. `print(len(summary))` in Python counts Unicode chars directly — draft the summary, check the length, trim it to range in the draft, and ONLY THEN build the article file around it. Rewriting the whole article file repeatedly to shorten an over-long 摘要 (as happened when a 348-char draft needed 6+ trims) wastes cycles. When trimming, cut parenthetical detail first (`（省工时）`, `（Prompt/SOP/Playbook）`), keep claim + implication + the author's core distinction. 251 is NOT acceptable — trim the extra char; 150-250 is the hard band.
+
 ### 核心要点
 
 Write 3-5 bullets. Each bullet should contain both a claim and a concrete reason, example, or implication.

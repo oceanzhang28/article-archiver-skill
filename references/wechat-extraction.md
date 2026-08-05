@@ -18,6 +18,19 @@ curl -s -L \
   "https://mp.weixin.qq.com/s/ARTICLE_SN"
 ```
 
+If the primary request returns a captcha page (small HTML, contains `环境异常` or `验证码`), try a mobile UA first — this often bypasses the captcha without needing cookies:
+
+```bash
+curl -s -L \
+  -A "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36" \
+  -H "Accept: text/html,application/xhtml+xml" \
+  -H "Accept-Language: zh-CN,zh;q=0.9" \
+  -H "Referer: https://weixin.qq.com/" \
+  "https://mp.weixin.qq.com/s/ARTICLE_SN"
+```
+
+If the captcha persists, fall back to the cookie-based approach:
+
 Fallback request with mobile UA and cookie reuse:
 
 ```bash
@@ -29,7 +42,7 @@ curl -s -L -b /tmp/wx_cookies.txt -c /tmp/wx_cookies.txt \
   "https://mp.weixin.qq.com/s/ARTICLE_SN"
 ```
 
-Heuristic: captcha wrappers are often much smaller than real article pages. If the page contains `环境异常`, `验证码`, or no `js_content`, treat it as a failed fetch.
+Heuristic: captcha wrappers are often much smaller than real article pages (~18KB vs 3MB+ for a real article). If the page contains `环境异常`, `验证码`, or no `js_content`, don't give up — try the mobile UA bypass above. It resolves most captcha cases without cookies.
 
 ## Extract Metadata
 
@@ -38,10 +51,19 @@ Try both single and double quotes for JavaScript variables:
 | Field | Preferred Source | Fallback |
 | --- | --- | --- |
 | title | `var msg_title` | `<meta property="og:title">` |
-| account | `var nickname` / `var nick_name` | footer text |
-| author | footer pattern `作者：...` | account name |
+| account | `var nickname` / `var nick_name` | `<meta name="author">` → footer text |
+| author | footer pattern `作者：...` | `<meta name="author">` → account name |
 | date | `var create_date` | `var ct` Unix timestamp |
-| description | `var msg_desc` | meta description |
+| description | `var msg_desc` | `<meta name="description">` / `<meta property="og:description">` |
+
+Some articles do not emit `var nickname` / `var nick_name` at all (e.g. the `AI组织进化论` account), but the `<meta name="author">` tag is populated. Always check the meta tag when JS variables come back empty.
+
+Another miss: when the page emits `var nickname = htmlDecode("...")` (e.g. `HR实名俱乐部`), the script's plain `var nickname = "..."` pattern returns empty for BOTH account and author even though title/body extracted fine. If account/author are empty but the body is good, grep the raw HTML instead of re-extracting:
+
+```bash
+grep -oP 'var\s+nickname\s*=\s*htmlDecode\("([^"]*)"\)' /tmp/wx_article.html
+grep -oP '<meta[^>]*name="author"[^>]*content="([^"]*)"' /tmp/wx_article.html
+```
 
 Important patterns:
 
@@ -49,6 +71,7 @@ Important patterns:
 r"var\s+msg_title\s*=\s*'([^']+)'(?:\.html\(false\))?"
 r'var\s+msg_title\s*=\s*"([^"]+)"(?:\.html\(false\))?'
 r'>/\s*作者[：:]\s*(.+?)(?:[<\n]|$)'
+r'<meta[^>]*name="author"[^>]*content="([^"]+)"'
 ```
 
 If `ct` is present, convert it with local time:
@@ -117,3 +140,4 @@ The script prints metadata and a Markdown body. Still run the final checklist in
 - Quote modules become normal text: style-based quote detection was not applied.
 - Embedded config or `CLAUDE.md` content becomes many `##` headings: convert that block back to fenced code or blockquote.
 - Section title and first sentence merge, such as `**一. 标题**正文`: split into heading plus paragraph.
+- Images silently missing after conversion: WeChat wraps many images in bare `<section><img ...></section>`. If using a DOM-based converter (e.g. BeautifulSoup), `tag.get_text(strip=True)` returns empty for such sections — they are easy to mis-filter as "empty" tags. Before skipping a tag, check for `<img>`, `<video>`, `<audio>`, `<iframe>`, or `<canvas>` children. The `references/extraction-script.py` uses a streaming `HTMLParser` and does not have this problem.
