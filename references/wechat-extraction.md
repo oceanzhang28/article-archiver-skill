@@ -135,6 +135,7 @@ The script prints metadata and a Markdown body. Still run the final checklist in
 ## Common Failures
 
 - Body length is tiny: likely captcha or extraction failed.
+- Body is mojibake (`æ...`/`ç...` where Chinese should be): the script decoded UTF-8 bytes as latin-1. Fix with `body.encode('latin-1').decode('utf-8')` — title/date/body_length will look fine, so don't mistake this for a captcha failure.
 - Images become standalone `!`: image URL extraction failed; retry with `data-src`.
 - Whole article becomes one paragraph: block tags were stripped too early.
 - Quote modules become normal text: style-based quote detection was not applied.

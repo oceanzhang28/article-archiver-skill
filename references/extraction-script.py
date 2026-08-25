@@ -27,16 +27,9 @@ DESKTOP_UA = (
     "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
 
-MOBILE_UA = (
-    "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
-)
-
 
 def extract_var(name, content):
     patterns = [
-        rf"var\s+{re.escape(name)}\s*=\s*htmlDecode\(\s*'((?:\\'|[^'])*)'\s*\)",
-        rf'var\s+{re.escape(name)}\s*=\s*htmlDecode\(\s*"((?:\\"|[^"])*)"\s*\)',
         rf"var\s+{re.escape(name)}\s*=\s*'((?:\\'|[^'])*)'(?:\.html\(false\))?",
         rf'var\s+{re.escape(name)}\s*=\s*"((?:\\"|[^"])*)"(?:\.html\(false\))?',
         rf"{re.escape(name)}\s*=\s*'((?:\\'|[^'])*)'",
@@ -50,15 +43,9 @@ def extract_var(name, content):
 
 
 def extract_meta_property(content, prop):
-    for match in re.finditer(r"<meta\b[^>]*>", content, re.I):
-        tag = match.group(0)
-        attrs = dict(
-            (m.group(1).lower(), html.unescape(m.group(2)))
-            for m in re.finditer(r'([a-zA-Z_:.-]+)=["\']([^"\']*)["\']', tag)
-        )
-        if attrs.get("property") == prop or attrs.get("name") == prop:
-            return attrs.get("content", "").strip()
-    return ""
+    pattern = rf'<meta[^>]+(?:property|name)=["\']{re.escape(prop)}["\'][^>]+content=["\']([^"\']*)["\']'
+    match = re.search(pattern, content, re.I)
+    return html.unescape(match.group(1)).strip() if match else ""
 
 
 def parse_date(content):
@@ -431,9 +418,8 @@ def repair_embedded_agents_guidelines(text):
 
 def extract_article(content, url=""):
     title = extract_var("msg_title", content) or extract_meta_property(content, "og:title")
-    meta_author = extract_meta_property(content, "author")
-    account = extract_var("nickname", content) or extract_var("nick_name", content) or meta_author
-    author = extract_footer_author(content) or meta_author or account
+    account = extract_var("nickname", content) or extract_var("nick_name", content)
+    author = extract_footer_author(content) or account
     date = parse_date(content)
     description = extract_var("msg_desc", content) or extract_meta_property(content, "description")
 
@@ -457,46 +443,15 @@ def extract_article(content, url=""):
     }
 
 
-def looks_like_captcha_or_empty(content):
-    if not content:
-        return True
-    markers = ("环境异常", "验证码", "请输入验证码", "访问过于频繁")
-    if any(marker in content for marker in markers):
-        return True
-    return 'id="js_content"' not in content and "content_noencode" not in content and len(content) < 200_000
-
-
 def fetch_url(url):
-    attempts = [
+    result = subprocess.run(
         ["curl", "-s", "-L", "-A", DESKTOP_UA, url],
-        [
-            "curl",
-            "-s",
-            "-L",
-            "-A",
-            MOBILE_UA,
-            "-H",
-            "Accept: text/html,application/xhtml+xml",
-            "-H",
-            "Accept-Language: zh-CN,zh;q=0.9",
-            "-H",
-            "Referer: https://weixin.qq.com/",
-            url,
-        ],
-    ]
-    last = ""
-    for cmd in attempts:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=45,
-            check=False,
-        )
-        last = result.stdout
-        if not looks_like_captcha_or_empty(last):
-            return last
-    return last
+        capture_output=True,
+        text=True,
+        timeout=45,
+        check=False,
+    )
+    return result.stdout
 
 
 def main():

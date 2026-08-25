@@ -88,6 +88,16 @@ wait
 echo "downloaded: $(ls /tmp/slides/ | wc -l)"
 ```
 
+⚠️ **Download count can be SHORTER than the URL list, and the missing slides are usually at the TAIL, not renumbered.** Real case (WorkBuddy办公智能体实操手册, 2026-08): 93 URLs extracted but only 88 files downloaded — `slide_88`..`slide_92` were absent even though they existed in the URL list (the trailing course-ad slides). The extraction body's image order is 1:1 with slide index, so a short download means the last N slides are missing, NOT that indices shifted. After the download loop, verify no gaps:
+
+```bash
+ls /tmp/slides/ | sed -E 's/slide_([0-9]+)\.jpg/\1/' | sort -n | awk 'NR>1 && $1!=prev+1 {print "MISSING after " prev} {prev=$1}'
+```
+
+Then fetch each missing index individually (they download fine one-at-a-time; the concurrency loop just dropped them), OCR them as a supplement, and append to the OCR file under their `===== SLIDE N =====` headers.
+
+**Also check for duplicate URLs**: the URL list may contain the same mmbiz image twice (e.g. a repeated banner), which inflates the URL count vs unique slides. Dedupe by URL when counting, but keep index positions (duplicate indices still need their slide file for the `{img(N)}` mapping to line up).
+
 ### 3. OCR every slide (background with notify)
 
 ```bash
@@ -112,6 +122,21 @@ Image-URL order in the extraction body == slide index 1:1 (`slide_0` = cover). O
 
 For each 篇: `### 篇名` heading, a bullet framework synthesized from OCR text (keep the slide's real numbers, e.g. `A+ 10% / B+ 20% / B 50% / C+D 20%`, `7-2-1 学习模型`), then the slide images for that range in original order. Drop pure-ad images (会员卡图, QR codes) but keep their surrounding text; keep the cover and trailing course-ad images.
 
+**Verify image count after assembly.** When building sections with `{img(N)}` placeholders, a section accidentally written as a plain (non-f) string silently keeps the literal placeholder — the file looks complete but is missing most images. After assembling the final file, assert the count: `print('图片数:', article.count('!['))` and compare against the number of slides you intended to keep (e.g. 83 for a 84-slide deck minus cover/ad). A count far below expected means placeholders weren't expanded.
+
 ### 6. Rewrite summaries from OCR-verified content
 
 摘要/核心要点 should come from what the slides actually say — OCR often confirms, corrects, or enriches the framework, and lets you include concrete percentages, product names, and tool names that were invisible in the raw extraction.
+
+## Assembly Trap: `{img(N)}` placeholders left unexpanded
+
+When rebuilding the article in Python, sections written as **plain (non-f-string) triple-quoted strings** keep the literal text `{img(6)} {img(7)} …` instead of expanding to image lines — only f-string sections (or the first f-string block) actually render images. Symptom: final file has far fewer `![` occurrences than expected (e.g. 3 instead of 83), and `re.findall(r'\{img\(\d+\)\}', …)` finds leftovers.
+
+Prevention / fix:
+1. Build sections with a placeholder like `{img(N)}` uniformly, then substitute in one pass AFTER assembling:
+   ```python
+   def repl(m):
+       return f'![幻灯片{int(m.group(1))+1}]({urls[int(m.group(1))]})'
+   body = re.sub(r'\{img\((\d+)\)\}', repl, body)
+   ```
+2. Always verify after assembly: `body.count('![') == expected_image_count` and `len(re.findall(r'\{img\(\d+\)\}', body)) == 0`.
