@@ -1366,6 +1366,7 @@ Cut from the gif image right before `欢迎关注麦肯锡中国` through the en
   body = re.sub(r'HR 转型\s*### Builder\s*\n\n，不是跨界', 'HR 转型**Builder**，不是跨界', body)
   ```
   Detection: `grep -n '###' article.md | grep -v '^[0-9]*:### '` catches them; the `\xa0` shows up as a visible space in terminal output so repr() the region to confirm.
+- ⚠️ **`\xa0`-before-`###` breaks word-continuation merges too (WorkBuddy piece, 2026-08-26)**: after the generic inline-###→bold pass, a mid-sentence concept preceded by `\xa0` becomes `发现 \xa0**WorkBuddy**\n\n也非常好用。` — a literal `replace('发现 **WorkBuddy**\n\n也非常好用。', ...)` silently no-ops because the `\xa0` sits between the lead-in and `**`. Use `\s*` in the merge anchor: `re.sub(r'发现\s*\*\*WorkBuddy\*\*\s*\n\n也非常好用。', '发现 **WorkBuddy** 也非常好用。', body)`. General rule for HR实名俱乐部 word-continuation merges: always `\s*` where the source may carry `\xa0` around the `###`/bold boundary.
 - **Tail promo marker variants**: the 线下活动 promo block opens with EITHER `✅最新AI线下活动日程` OR `【最近线下活动】` (both followed by 城市+日期 lines + `✅ 扫码报名`/`扫码咨询` + QR image) — cut from whichever marker appears; the `> 文章链接` recommendation list above it is KEPT.
 
 - **Em-dash `——` → `---- ` (four ASCII hyphens + space)**: some accounts (HR实名俱乐部 周鸿祎 piece) emit `AI 时代不一样了 ---- 技术迭代按周算` where the original is `——`. Fix with a plain replace: `body = body.replace(' ---- ', '——')` (check the exact spacing variant before replacing; assert the anchor was found).
