@@ -1091,19 +1091,22 @@ body = re.sub(r'###\s*([^\n]+)', r'**\1**', body)
 
 ⚠️ **Continuation can be a WORD, not just punctuation** (verified 2026-08-24 on the 组织效能魔方 piece): `剩下的空间只有靠### 人的能力和技能升级\n\n来打开。` — the `([，。；、：])` class misses `来打开。`, leaving an awkward paragraph split `靠**人的能力和技能升级**\n\n来打开。`. Add a targeted merge for known splits (or a general `re.sub(r'\*\*([^*\n]+?)\*\*\n\n(来|以|再|才|就|从|这)', ...)` pass). Real case: `body.replace('靠**人的能力和技能升级**\n\n来打开。', '靠**人的能力和技能升级**来打开。')`.
 
+⚠️ **Continuation can also be an EM-DASH `——`** (verified 2026-08-26 on 组织效能系列·第三篇《战略意图与战略损益表，让事想清楚，让团队可以做出来的几个方法》): `### 商业模式的升级\n\n——从一次性销售变成订阅服务` / `### 资源不足时，优先级就是资源投放的顺序\n\n——人员或资金不足` — neither the punctuation class `[，。；、：]` nor the word class catches `——`. After the generic inline-###→bold pass, splice with `re.sub(r'\*\*([^*\n]+?)\*\*\n\n——', r'**\1**——', body)` (run alongside the other inline-### fixes, before the `(\d{2})` section-number pass).
+
 Also: run inline-###→bold BEFORE the section-number→`###` regex (`^(\d{2})\s{1,3}(.+)$` → `### \1 \2`), otherwise the bold pass converts the freshly-made `### 01 标题` headings into bold lines.
 
-Callout labels are `> **♦ 现象**` / `> **♦ 洞察**` / `> **♦ 关键判断**` / `> **♦ 实践心得**` with content on `>  …` lines; merging keeps each callout a single blockquote. `🔍 …` question lines and `▲ 图N · caption` caption lines are body content — keep them.
+Callout labels are `> **♦ 现象**` / `> **♦ 洞察**` / `> **♦ 关键判断**` / `> **♦ 实践心得**` with content on `>  …` lines; merging keeps each callout a single blockquote. ⚠️ **◆ variant** (组织效能系列·第三篇 2026-08-26): callouts emitted as `> **◆ 现象**` / `> **◆ 洞察**` — the ♦-merge regex misses the black diamond; extend the char class to `[♦◆]` if you want them merged, or accept the two-blockquote rendering (harmless, renders fine; the 第三篇 archive kept them separate). `🔍 …` question lines and `▲ 图N · caption` caption lines are body content — keep them.
 
 **Generic inline-`###` cleanup (组织效能系列 pieces, verified 2026-08-24)**: essays like 《做好了一件事，还远不够，效能提升需要组织效能魔方》 have inline `###` scattered through prose (`——### 控编制、管薪酬、算人效。`, `第一面是### 战略共识`, `### 六面合在一起，才是一个从诊断到落地…的完整闭环。`) that a specific replace-list can't cover. Use a generic pass. ⚠️ **ORDER MATTERS: run the generic inline-`###`→bold regex BEFORE the `^(\d{2})\s{1,3}(.+)$` → `### NN` heading regex.** If bold runs after, `###\s*([^\n]+)` matches the just-created `### 01 组织效能…` headings and flattens them into `**01 组织效能…**` paragraphs. Sequence:
 
 ```python
 body = re.sub(r'###\s*([^\n]+?)\n\n([，。；、：])', r'**\1**\2', body)  # merge split continuation punct FIRST
 body = re.sub(r'###\s*([^\n]+)', r'**\1**', body)                       # then generic inline ### -> bold
+body = re.sub(r'\*\*([^*\n]+?)\*\*\n\n——', r'**\1**——', body)          # merge em-dash continuations (verified 2026-08-26, 第三篇: 4×)
 body = re.sub(r'^(\d{2})\s{1,3}(.+)$', r'### \1 \2', body, flags=re.M)  # section numbers LAST
 ```
 
-Non-punctuation continuations need a manual merge: `靠### 人的能力和技能升级\n\n来打开。` → `靠**人的能力和技能升级**来打开。` — after the generic pass, scan each former inline-### spot for an orphaned continuation word/`——` on the following line and splice it back. Then re-run the standard checklist (no inline `###` at line start, no standalone `###` lines).
+Non-punctuation continuations need a merge: word splices (`靠**人的能力和技能升级**\n\n来打开。` → `靠**人的能力和技能升级**来打开。`) use a targeted replace or a `(来|以|再|才|就|从|这)` general pass; **em-dash splices** (`**商业模式的升级**\n\n——从一次性销售变成订阅服务…`) are covered by the generic `\*\*…\*\*\n\n——` regex in the sequence above — verified 组织效能系列·第三篇 (2026-08-26 《战略意图与战略损益表，让事想清楚，让团队可以做出来的几个方法》): FOUR em-dash continuations (商业模式的升级 / 资源不足时，优先级就是资源投放的顺序 / 今年要做的五件事里，第一件事是什么…所有人都要清楚 / 拆到最后你会发现，有几个团队非常关键) all spliced in one pass, no manual edits. After the passes, re-run the standard checklist (no inline `###` at line start, no standalone `###` lines).
 
 Optional image-alt improvement: the caption follows each image, so `![image](url)` + `▲ 图N · cap` can become `![图N · cap](url)` in one regex pass:
 

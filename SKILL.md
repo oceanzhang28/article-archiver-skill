@@ -132,7 +132,7 @@ Use the article title as the base filename, but sanitize unsafe characters befor
 - Prefer a stable, readable filename made from Chinese characters, letters, numbers, spaces, and common punctuation: `.`, `-`, `_`, `，`, `。`.
 - Keep the YAML `title` as the original title even if the filename is sanitized.
 - Full-width Chinese punctuation (`：` `？` `（）` `，` `。`) is safe in filenames and survives WebDAV PUT fine — the vault already stores files like `麦肯锡：AI时代，三支柱之后，HR往哪走？.md`. Only ASCII specials (`:` `/` `?` `*` etc.) actually need sanitizing; don't over-strip full-width chars.
-- ⚠️ **The ASCII pipe `|` is rejected by Jianguoyun WebDAV with HTTP 400 `IllegalArgument` / `the nustore path is not valid` — even when percent-encoded as `%7C`.** Percent-encoding does NOT help; the server decodes and re-validates. Replace ` | ` with ` - ` (or another safe char) in the FILENAME only, keep the original title (with `|`) in the YAML `title` and the H1. Real case: `森马…方法论 | AI新组织观察` → filename `森马…方法论 - AI新组织观察.md`. When a PUT returns 400, check the error body (`<s:exception>IllegalArgument</s:exception>`) — it names the offending path — then sanitize and retry.
+- ⚠️ **The ASCII pipe `|` is rejected by Jianguoyun WebDAV with HTTP 400 `IllegalArgument` / `the nustore path is not valid` — even when percent-encoded as `%7C`.** Percent-encoding does NOT help; the server decodes and re-validates. Replace ` | ` with ` - ` (or another safe char) in the FILENAME only, keep the original title (with `|`) in the YAML `title` and the H1. Real case: `森马…方法论 | AI新组织观察` → filename `森马…方法论 - AI新组织观察.md`. When a PUT returns 400, check the error body (`<s:exception>IllegalArgument</s:exception>`) — it names the offending path — then sanitize and retry. ✅ **Full-width `｜` (U+FF5C) is a DIFFERENT character and is SAFE** — verified 2026-08-26: `每个销售都有一份不同周报，活动报名翻倍｜Anthropic营销团队AI实践.md` PUT with HTTP 201 (encoded `%EF%BD%9C`), and the same fullwidth bar is already used in existing entry-page wikilinks (e.g. `咨询行业实战指南｜用好 TraeWork…`). Only ASCII `|` (U+007C) triggers the 400; don't over-sanitize fullwidth bars.
 
 ## Article Template
 
@@ -335,7 +335,7 @@ while True:
     body = new
 ```
 
-Then verify no stray `###` lines remain except legit `### `/`#### ` headings.
+Then verify no stray `###` lines remain except legit `### `/`#### ` headings. ⚠️ If you assert this with a regex, use `re.search(r'^#{3,6}\s+#{3,6}', ...)` — a `^#{1,6}\s*###` check backtracks (`#` + `###`) and flags every legit `#### X` sub-heading as a false positive (fired 2026-08-26 on the Anthropic 销售周报 piece).
 
 ## AI组织进化论 Account Artifacts
 
@@ -355,6 +355,35 @@ for sub in ['一道被多数企业做反的投资题', '员工不是不愿改变
 ### `> 结语` closing header → `### 结语`
 
 The closing section extracts as a blockquote `> 结语` — it's a section header, convert to `### 结语`.
+
+### Chinese-numeral chapter headers (一、~七、) + numbered sub-steps (第 N 步)
+
+Not every AI组织进化论 post uses the `01 ` bare-number format — the Anthropic 销售周报 piece (2026-08-26) uses 中文数字章节 (`一、第一步没有写代码，他先写了一份"假周报"` … `七、案例三点启示`) plus `第 N 步：` sub-steps and standalone sub-labels in section 三:
+
+```python
+body = re.sub(r'^([一二三四五六七八九十]+、[^\n]{1,60})$', r'### \1', body, flags=re.M)
+body = re.sub(r'^(第 \d+ 步：[^\n]{1,60})$', r'#### \1', body, flags=re.M)
+for sub in ['本周三件事', '未来几周的活动', '已报名的联系人', '会后跟进', '可分享的营销内容']:
+    body = body.replace('\n' + sub + '\n', '\n#### ' + sub + '\n')
+```
+
+⚠️ **Checklist regex trap (fired 2026-08-26)**: asserting "no nested ###" with `re.search(r'^#{1,6}\s*###', body, re.M)` FALSE-POSITIVES on every legit `#### X` sub-heading — `#{1,6}` backtracks to `#` + `###`. Use `re.search(r'^#{3,6}\s+#{3,6}', body, re.M)` (whitespace required between hash groups).
+
+### Flattened prompt-template code block (`<pre>` lines joined into one line)
+
+WeChat `<pre data-lang="markdown">` blocks whose lines are separate `<code>` elements extract as ONE giant line (e.g. the 复现模板 in the Anthropic 销售周报 piece). Rebuild line breaks from the prompt's own structure:
+
+```python
+code = code.replace('\xa0', ' ')          # WeChat uses \xa0 after "N."
+code = re.sub(r'(?=# )', '\n', code)      # before each "# 角色"-style marker
+code = re.sub(r'(?=\d\. )', '\n', code)   # before each numbered item
+# then fix glued "# header" + prose pairs (角色 / 发送前校验 had prose continuations):
+code = code.replace('# 角色你负责生成每周销售营销简报。', '# 角色\n你负责生成每周销售营销简报。')
+```
+
+### Tail citation variant: plain `参考资料` + `原文链接` BEFORE the 📍 CTA
+
+The citation block isn't always `### 资料来源：` — it can be plain `参考资料` + citation + `原文链接：https://…`, placed BEFORE the 📍关注 CTA (verified 2026-08-26, Anthropic piece cites claude.com/blog). The standard splice still works because `cta_start < rec_start`: `body = body[:cta_start].rstrip() + '\n\n' + body[rec_start:]`. Keep `参考资料` / `原文链接` / `其他推荐阅读：` as plain lines (faithful to source).
 
 ### Inline `###` mid-sentence
 
@@ -792,7 +821,7 @@ This skill's public home is `github.com/oceanzhang28/article-archiver-skill` (SS
 ## References
 
 - `references/wechat-extraction.md`: Fetching WeChat article HTML, metadata extraction, and script usage.
-- `references/wechat-formatting.md`: WeChat HTML-to-Markdown formatting rules and post-extraction checks. Includes account-specific artifacts: 润米商城/刘润 (第NNNN篇原创文章 tail marker, 最后的话 heading, promo footer collapse), TRAE.ai (plugin lists, 更多技巧 numbered items order-dependence, 小技巧 callouts), 高绩效HR, AI组织进化论, 赛普咨询, 首席组织官, 麦肯锡, 书图与手记, 物业管理实践, 卡兹克.
+- `references/wechat-formatting.md`: WeChat HTML-to-Markdown formatting rules and post-extraction checks. Includes account-specific artifacts: 润米商城/刘润 (第NNNN篇原创文章 tail marker, 最后的话 heading, promo footer collapse), TRAE.ai (plugin lists, 更多技巧 numbered items order-dependence, 小技巧 callouts), AI与组织领导力跃迁/罗明 (header strip, inline-###→bold incl. em-dash `——` continuation merges, section numbers, tail promo cut + sign-off re-append), 高绩效HR, AI组织进化论, 赛普咨询, 首席组织官, 麦肯锡, 书图与手记, 物业管理实践, 卡兹克.
 - `references/summary-guidelines.md`: Summary and note-writing rules.
 - `references/knowledge-card-format.md`: Knowledge card template, frontmatter, and numbering rules.
 - `references/extraction-script.py`: Standalone WeChat extraction script.
