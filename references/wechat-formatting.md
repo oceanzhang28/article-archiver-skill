@@ -156,6 +156,14 @@ to:
 
 Delete standalone `**` lines left by WeChat nested bold/image markup.
 
+⚠️ **Numbered headers with opening `**` but NO closing `**` (卡兹克 launch reviews, 2026-09-04 GPT-6 Astra piece)**: section titles extract as `**二. 目前世界上最好的操作电脑的模型` — the bold marker opens but never closes (line ends bare, next line is the section's first body sentence with no blank between). Regex-convert ONLY the unclosed lines to `###` headings (a closed bold line like `**世界上最好的操作电脑模型。**` is real content — leave it bold), then normalize the missing blank after each new heading:
+
+```python
+# only lines that START with **<numeral>. and do NOT end with **
+body = re.sub(r'^\*\*([一二三四五六七八九十]+\.\s[^\n]+)$', r'### \1', body, flags=re.M)
+body = re.sub(r'(### [一二三四五六七八九十]+\. [^\n]+)\n(?=[^\n#])', r'\1\n\n', body)
+```
+
 ## Plain-Text Section Titles → `###` Headings
 
 Many WeChat articles use bare-text section titles (no bold, no heading tag) that extraction emits as standalone lines:
@@ -1042,7 +1050,9 @@ for line in ['AI与组织领导力跃迁\n', '深度思考 · 专业洞察 · �
 - The in-body H1 title (e.g. `集团薪酬改革，换张表能解决吗？`) often differs slightly from `var msg_title` (`集团型企业的薪酬改革，换张表能解决吗？`). Use msg_title for frontmatter/filename; drop the in-body title from 原文 since the template H1 already carries it.
 - Keep the `—— {subtitle} ——` line and the `文 / 罗明    资深管理咨询顾问与企业实践者` author line. Normalize the author whitespace with a regex (the run is mixed spaces/`\u3000`, so literal replace can miss): `re.sub(r'文 / 罗明\s*资深管理咨询顾问与企业实践者', '文 / 罗明 · 资深管理咨询顾问与企业实践者', body)`.
 - Also keep (they are content, not boilerplate): the series label line `组织效能系列 · 第N篇` when present, the `> ◆ 本文导读` blockquote, and the closing `**下一篇预告**` line (verified 2026-08-24 on 组织效能系列·第二篇《做好了一件事，还远不够，效能提升需要组织效能魔方》).
+- ⚠️ **White-paper promo link right before `**回顾上篇**` — DROP it** (verified 2026-09-05 on 组织效能系列·第四篇《拉开差距的从来不是人数，是组织与能力》): the account inserts a one-line product CTA between the 导读/separator and the 回顾上篇 recap: `**[110 页深度白皮书直接获取｜《人才经营手册》：70+ 数据、20+ 工具、8 章案例](https://mp.weixin.qq.com/s?...)**` — a pure promo, not article content. Remove the bold-link paragraph (`re.sub(r'\*\*\[110 页深度白皮书直接获取[^\n]*\*\*\n\n', '', body)`), then keep `**回顾上篇**` as the body start. It was ABSENT in 第三篇 (2026-08-26) and PRESENT in 第四篇 — anchor the cut on the promo text, not on a fixed position.
 - **Series label line is informative — KEEP it** (verified 2026-08-24 on the 组织效能魔方 piece): the account prefixes series articles with `组织效能系列 · 第二篇` (also seen: 组织效能系列 第一篇 referencing 四层根因/冰山). It is NOT boilerplate like the slogan/CTA lines — keep it in 原文 header above the subtitle.
+- **白皮书 promo link right after 导读 blockquote** (verified 2026-09-05 on 组织效能系列·第四篇): the body opens with a bold linked promo `**[110 页深度白皮书直接获取｜《人才经营手册》：70+ 数据、20+ 工具、8 章案例](https://mp.weixin.qq.com/s?…)`** sitting between the `> ⭐ 建议收藏后详细阅读` line and `**回顾上篇**`. It is a product-promo CTA (same 人才经营手册 white paper as later articles), NOT article content — drop it. Generic removal: `re.sub(r'\*\*\[110 页深度白皮书直接获取｜《人才经营手册》[^\]]*\]\([^)]+\)\*\*\n\n', '', body)`. The reference archive (第三篇) has no such line, so cutting it keeps the series consistent.
 
 ### Body artifacts
 
@@ -1101,12 +1111,29 @@ Callout labels are `> **♦ 现象**` / `> **♦ 洞察**` / `> **♦ 关键判�
 
 ```python
 body = re.sub(r'###\s*([^\n]+?)\n\n([，。；、：])', r'**\1**\2', body)  # merge split continuation punct FIRST
+body = re.sub(r'###\s*([^\n]+?)\n\n([，。；、：])', r'**\1**\2', body)  # merge split continuation punct FIRST
 body = re.sub(r'###\s*([^\n]+)', r'**\1**', body)                       # then generic inline ### -> bold
 body = re.sub(r'\*\*([^*\n]+?)\*\*\n\n——', r'**\1**——', body)          # merge em-dash continuations (verified 2026-08-26, 第三篇: 4×)
+body = re.sub(r'\*\*([^*\n]+?)\*\*\n\n（', r'**\1**（', body)           # merge PARENTHETICAL continuations (verified 2026-09-05, 第四篇)
 body = re.sub(r'^(\d{2})\s{1,3}(.+)$', r'### \1 \2', body, flags=re.M)  # section numbers LAST
 ```
 
-Non-punctuation continuations need a merge: word splices (`靠**人的能力和技能升级**\n\n来打开。` → `靠**人的能力和技能升级**来打开。`) use a targeted replace or a `(来|以|再|才|就|从|这)` general pass; **em-dash splices** (`**商业模式的升级**\n\n——从一次性销售变成订阅服务…`) are covered by the generic `\*\*…\*\*\n\n——` regex in the sequence above — verified 组织效能系列·第三篇 (2026-08-26 《战略意图与战略损益表，让事想清楚，让团队可以做出来的几个方法》): FOUR em-dash continuations (商业模式的升级 / 资源不足时，优先级就是资源投放的顺序 / 今年要做的五件事里，第一件事是什么…所有人都要清楚 / 拆到最后你会发现，有几个团队非常关键) all spliced in one pass, no manual edits. After the passes, re-run the standard checklist (no inline `###` at line start, no standalone `###` lines).
+Non-punctuation continuations need a merge: word splices (`靠**人的能力和技能升级**\n\n来打开。` → `靠**人的能力和技能升级**来打开。`) use a targeted replace or a `(来|以|再|才|就|从|这)` general pass; **em-dash splices** (`**商业模式的升级**\n\n——从一次性销售变成订阅服务…`) are covered by the generic `\*\*…\*\*\n\n——` regex in the sequence above — verified 组织效能系列·第三篇 (2026-08-26 《战略意图与战略损益表，让事想清楚，让团队可以做出来的几个方法》): FOUR em-dash continuations (商业模式的升级 / 资源不足时，优先级就是资源投放的顺序 / 今年要做的五件事里，第一件事是什么…所有人都要清楚 / 拆到最后你会发现，有几个团队非常关键) all spliced in one pass, no manual edits. **Parenthetical splices** (`### 数字化意识\n\n（看到哪些工作可以被数字化替代）、### AI 素养\n\n（AI 时代…` — the 五大核心能力 enumeration) are covered by the `\*\*…\*\*\n\n（` regex — verified 组织效能系列·第四篇 (2026-09-05 《拉开差距的从来不是人数，是组织与能力》): five parenthetical continuations (数字化意识/AI素养/追求卓越/互联生态/领导力与抗压恢复力, plus 人机共生 earlier) all spliced in one pass. After the passes, re-run the standard checklist (no inline `###` at line start, no standalone `###` lines).
+
+⚠️ **Protect pre-existing legit `###` headings BEFORE the generic inline-`###`→bold pass (fired 2026-09-10 on 组织效能系列·第五篇《组织效能：投产与运营，钱花得对不对，比花多少更重要》)**: 第五篇's section 07 (六面收束) subheadings came out of extraction as REAL `### 第一面，战略共识` … `### 第六面，效能监控` headings (already `###`-formatted, `第X面，name` with comma), NOT plain lines. The generic pass `re.sub(r'###\s*([^\n]+)', r'**\1**', body)` flattens them into bold paragraphs (`**第一面，战略共识**`) — headings silently lost. This differs from 第二篇/第四篇 where the equivalent subheadings extracted as PLAIN lines (no conflict with the bold pass). A heading-prefix check (`^### `) does NOT save you here either — the artifacts (`### 花了多少钱`, `### 配了多少人`…) also sit at mid-paragraph positions but the legit ones are line-start; the robust fix is explicit-pattern protection with placeholder tokens before the passes and restore after:
+
+```python
+protected = {}
+for m in re.finditer(r'^### 第[一二三四五六]面，[^\n]+$', body, re.M):
+    tok = f'@@PROT{m.start()}@@'
+    protected[tok] = m.group(0)
+    body = body.replace(m.group(0), tok)
+# ... run ALL inline-###->bold + continuation-merge passes ...
+for tok, h in protected.items():
+    body = body.replace(tok, h)
+```
+
+In 第五篇 the ONLY `###` inside section 07 were these legit headings (zero inline artifacts there), while sections 01–06 carried ~25 mid-paragraph artifacts — so after the passes the surviving `###` lines should be exactly the section numbers (`### 01 …`–`### 07 …`) + the protected 六面 headings. Verify with `re.findall(r'^### ', body, re.M)` and eyeball the list (all legit) before upload.
 
 Optional image-alt improvement: the caption follows each image, so `![image](url)` + `▲ 图N · cap` can become `![图N · cap](url)` in one regex pass:
 
@@ -1114,6 +1141,26 @@ Optional image-alt improvement: the caption follows each image, so `![image](url
 body = re.sub(r'!\[image\]\((https://[^)\s]+)\)\n\n▲ 图(\d+) · ([^\n]+)',
               r'![图\2 · \3](\1)\n\n▲ 图\2 · \3', body)
 ```
+
+### PART dividers + bold sub-headings (销售管理突围 series, verified 2026-09-16)
+
+The 销售管理突围 series (《红利退潮之后，销售管理的五个死结》— 五个死结 + 定目标三新命题, 13 numbered sections) adds TWO structural levels that earlier 罗明 pieces lacked — the extraction emits both as PLAIN lines (no `**`, no `###`), so a heading-conversion pass is required or the archive loses its outline:
+
+1. **`PART N · 标题` eyebrow dividers** (source: `<p style="text-align:center;font-size:13px;font-weight:700;color:rgb(0,212,170);letter-spacing:2px">`) → `## PART N · 标题` (level-2, above the `### NN` sections).
+2. **Bold sub-headings** (source: `<p style="font-size: 17px;font-weight: 700;color: rgb(26, 48, 80);text-align: center">`) → `#### 标题` (level-4). There were 24 of them (红利的二十年 / 难题一 定目标… / 陷阱：鞭打快牛 / 四种常见方式 …), some as short as two characters (`脆弱` / `焦虑`) — do NOT drop them as noise; they carry the article's sub-structure. Enumerate them from the source HTML rather than guessing from the body:
+
+```python
+import re, html
+s = open('/tmp/article.html', encoding='utf-8', errors='ignore').read()
+s = s.replace('\\x3c','<').replace('\\x3e','>').replace('\\x22','"')   # HTML is a JS-escaped string
+subs = [html.unescape(re.sub(r'<[^>]+>','',m.group(1))).strip()
+        for m in re.finditer(r'<p style="font-size: 17px;font-weight: 700;[^"]*"[^>]*>(.*?)</p>', s, re.S)]
+# then, for each: body = body.replace('\n'+t+'\n', '\n#### '+t+'\n')  (assert found, print missing)
+```
+
+⚠️ The escaped HTML holds every `<p>`/`<h2>` TWICE (duplicated markup) — de-duplicate the extracted list before conversion, and note the sub-heading list is stable only for this series' template. Order: header cut → separator (`---`) → `## PART` → `#### sub-headings` → `### NN` sections (the `^(\d{2})\s{1,3}(.+)$` regex must run LAST, it would otherwise mangle lines like `PART 1 · …`? no — but it does not match `####`/`##` lines; keep it last anyway for safety). Verify: `re.findall(r'^#{2,4} ', body, re.M)` should show exactly 4 `## PART`, 13 `### NN`, 24 `####`.
+
+The series label (`销售管理突围 · 第一篇`) stays in the body preamble like `组织效能系列 · 第五篇`; the in-body duplicate title and the `点击关注…` CTA line are dropped.
 
 ### Footer blocks to drop (keep author sign-off)
 
@@ -1468,6 +1515,16 @@ if idx != -1:
 ```
 
 Also: a section heading can be followed by a bolded term on the next line (`### 当对方有替代方案，就慎用\n\n****极端锚定法**` — 4-asterisk artifact) — merge as `### 当对方有替代方案，就慎用**极端锚定法**` (heading + bold term, keep the bold).
+
+## Datawhale Account Artifacts
+
+Articles from `Datawhale` (AI/大数据学习社区，正文署名具体成员如 王大鹏; `var nickname` 正常输出) — verified 2026-08-28 on 《我用 Obsidian 搭了一套 Agent 知识系统，保姆教程来了！》:
+
+- **Header banner `> \xa0Datawhale干货\xa0`**: the account tag line carries U+00A0 non-breaking spaces AROUND the text — a literal-space `replace('>  Datawhale干货 ', ...)` silently no-ops. Use a regex: `body = re.sub(r'^>.*Datawhale干货.*\n\n?', '', body, flags=re.M)`.
+- **Author line fused noise**: `> **### 作者：王大鹏，Datawhale成员` → `> 作者：王大鹏，Datawhale成员` (strip the `**### ` prefix fused onto the 作者 metadata line).
+- **Section titles 一、~七、 → `##`**: AI知识 folder convention uses `##` for the article's main sections (same level as `## 原文`), `###` for sub-headings. Convert bare `^([一二三四五六七八九十]+、[^\n]{1,60})$` lines → `## \1`.
+- **Plain sub-heading lines → `###`**: final-section indicator labels extract as bare lines (e.g. `Agent 查得准不准、快不快` / `查到的知识有没有真正用上` / `新经验有没有留下并再次使用` in the closing 指标 section) — convert each to `### `.
+- **Tail 点赞三连 noise**: the post ends with a "在看/点赞/分享三连" engagement CTA that extracts as `### 一起“\n\n点**### 赞”\n\n### 三连\n\n↓**` — delete the whole run (pure CTA, not content), then rstrip.
 
 ## Final WeChat Checklist
 

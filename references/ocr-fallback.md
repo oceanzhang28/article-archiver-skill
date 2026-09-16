@@ -54,6 +54,15 @@ Common OCR errors in WeChat screenshots:
 
 Group consecutive lines from the same sender. Remove OCR noise (standalone symbols, broken English fragments). Add paragraph breaks where the original message had natural pauses.
 
+### 5. Product-promo preview images (toolbook sales pages)
+
+Product-sales pages (高绩效HR 198页可编辑PPT toolbook promos) carry NO prose — the body is banner + product intro + `— 资料预览 —` + N preview images of the product pages. To write real 摘要/核心要点 instead of fabricating from the title:
+
+- **Download all preview images** (37 in the HRBP工具书 piece): extract the `![image](url)` list from the JSON body, strip the `#imgIndex=...` fragment, download with a ThreadPoolExecutor (8 workers, ~30s for 37 imgs). Save as `img_<n>.png` where n = imgIndex, so page order is preserved.
+- **OCR a SAMPLE, not all**: first ~8 pages (usually the index/TOC: 痛点-解决路径索引, 场景化索引, 自评体系, 能力模型) + a few spread pages (e.g. 12/16/20/24/28) to cover the operational modules (人才盘点, 正向激励, 冲突调解, 人效核算).
+- **Read for structure, not transcription**: OCR output is noisy (`SRS RST` / `SaRS Hes costal` garbled runs). Extract the toolbook's real framework — self-assessment dimensions, workflow steps, KPI formulas, chapter names — and use THAT for 摘要/核心要点. Don't try to transcribe every table cell.
+- **Add a slide-note** in the archive body: the preview images ARE the article's content, so the note (`> **注**：本文为...产品推广帖，正文为预览图...`) tells the reader the images carry the substance.
+
 ## Pitfalls
 
 - **Pillow in venv**: The Hermes venv may not have Pillow. Use `/usr/bin/python3` or install with `--break-system-packages`.
