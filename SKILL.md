@@ -366,6 +366,16 @@ for sub in ['一道被多数企业做反的投资题', '员工不是不愿改变
         body = body.replace('\n' + sub + '\n', '\n### ' + sub + '\n')
 ```
 
+### `01｜标题` headers (FULLWIDTH bar variant — 协调税 piece, 2026-09-19)
+
+A third numbering variant: section headers extract as `01｜80%的人觉得自己提效，企业利润为什么没跟上？` — two digits + **fullwidth bar U+FF5C** + title, as one bare line with NO trailing space. Distinct from the `01 ` (trailing space) and `**01**` forms:
+
+```python
+body = re.sub(r'^(\d{2})｜(.+)$', r'### \1｜\2', body, flags=re.M)   # keeps the bar inside the heading
+```
+
+Check which variant is live by grepping the extracted body for `^\d{2}` lines before choosing a regex — running the wrong one silently no-ops (no error, headings stay as plain prose lines).
+
 ### `> 结语` closing header → `### 结语`
 
 The closing section extracts as a blockquote `> 结语` — it's a section header, convert to `### 结语`.
@@ -414,6 +424,8 @@ if m:
 The tail has three layers, keep/drop as follows:
 - **KEEP**: `### 资料来源：` + the McKinsey citation/author list/link (real content), and the `其他推荐阅读：` link list (matches the vault's existing AI组织进化论 archives, which also keep these links).
 - **DROP**: `若需全文PDF，也可以私信"报告"，我来发送` (interaction CTA), `📍关注AI组织进化论｜赋能AI组织转型` (follow CTA), and the course-promo paragraph (`极简AI领导力-成为AI原生管理者…欢迎私信交流`).
+
+⚠️ **The interaction-CTA wording VARIES between posts — anchor on the prefix, not the full sentence.** Verified variants: `若需全文PDF，也可以私信"报告"，我来发送` (2026-08-20) and `若需帮助，也可以后台私信报告我来发送～` (2026-09-19, 协调税 piece). Both sit immediately BEFORE the 📍关注 line, so the safest cut is: `cta_start = min(p for p in (body.find('若需'), body.find('📍关注AI组织进化论')) if p != -1)`, spliced to `rec_start = body.find('其他推荐阅读：')` exactly as in the standard pattern above. Never hardcode the full CTA sentence — a changed tail would leave the CTA in the archived body (it only fails silently; the splice just doesn't fire when the literal string is absent).
 
 ⚠️ **Tail ORDER trap (fired 2026-08-20 on the 英伟达 ChatGPT Work piece)**: extraction order is `…正文 → OpenAI原文链接 → 📍关注… CTA + course promo → 其他推荐阅读： link list`. The 推荐阅读 list comes AFTER the 📍 CTA, so a naive `body = body[:body.find('📍关注AI组织进化论')]` cut deletes the list too (the vault convention keeps it). Fix — cut only the middle CTA block, splice the list back:
 
@@ -722,7 +734,9 @@ new_block = '\n'.join(lines[:last_idx+1]) + '\n' + NEW_LINK + '\n' + '\n'.join(l
 content.replace('全网最详细的Codex入门教程]]\n\n### prompt', ...)  # matches display text!
 ```
 
-**Rule of thumb**: if you're touching an entry page, use `find()` to locate section starts/ends, `split('\n')` to get lines, and insert by array index. Never construct a `replace(old, new)` where `old` contains text that appears in both the path and display portion of a wikilink.
+**Rule of thumb**: if you're touching an entry page, use `find()` to locate section starts/ends, `split('\n')` to get lines, and insert by array index.
+
+✅ **The `startswith('- [[')` last-link scan tolerates malformed entries** — entry pages contain occasional wikilinks with the bullet stripped (real case: AI知识入口's first index has a bare `[[AI知识/我用 Obsidian 搭了一套 Agent 知识系统，保姆教程来了！|…]]` with no `- ` prefix, sitting mid-list). The scan skips such lines, so the insertion lands after the last *well-formed* bullet and the link stays in the list body — no repair needed. Don't "fix" the malformed line while archiving; it's out of scope for a routine update. Never construct a `replace(old, new)` where `old` contains text that appears in both the path and display portion of a wikilink.
 
 ### `rfind` + `find("\\\\\\\\n")` trailing-newline trap
 

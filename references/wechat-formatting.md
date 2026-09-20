@@ -1162,6 +1162,8 @@ subs = [html.unescape(re.sub(r'<[^>]+>','',m.group(1))).strip()
 
 The series label (`销售管理突围 · 第一篇`) stays in the body preamble like `组织效能系列 · 第五篇`; the in-body duplicate title and the `点击关注…` CTA line are dropped.
 
+✅ **第二篇 confirmed the template (2026-09-21, 《目标不是算出来的，激励也不是加两个点》)**: identical structure — 4 `## PART N · …` dividers, 10 `### NN 标题` sections (01–10), 17 `####` bold sub-headings (enumerate from the source `font-size: 17px;font-weight: 700;` paragraphs, `悬赏，还是保障？` … `从偏佣金，到佣金加奖金`). Two extra notes for this piece: (a) the `**引言**　…` lead-in line (bold label + U+3000 + prose, from `<strong>引言</strong><span>　…`) is kept verbatim as a body paragraph — do NOT convert to a heading; (b) the 人才经营手册 white-paper promo link appears here too (drop it), and the tail promo header is `欢迎阅读相关精选文章` followed by a SECOND block `欢迎阅读组织与人才管理精选文章` — cut at the FIRST `欢迎阅读`, then re-append the `罗明` / `资深管理咨询顾问与企业实践者 · 咨询公司合伙人` sign-off. Extraction artifact worth checking: the terminal preview can show a section title as `10 你���让团队做什么` (display-only truncation) — verify with an exact `in body` check before "fixing" a char that isn't broken.
+
 ### Footer blocks to drop (keep author sign-off)
 
 - `欢迎阅读相关精选文章` / `欢迎阅读组织与人才管理精选文章` / `欢迎阅读人才管理精选文章` + the related-article link list (pure cross-promo navigation) — ⚠️ **the promo header VARIES by article** (verified 2026-08: 激励 piece used `欢迎阅读相关精选文章`, 领导力发展 piece used `欢迎阅读人才管理精选文章`). Search for the first of the three variants, or just search for the common substring `欢迎阅读` and cut there:
