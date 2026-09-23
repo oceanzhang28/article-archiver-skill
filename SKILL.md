@@ -12,6 +12,7 @@ Archive articles into Obsidian `00知识库/`: preserve the full original body, 
 - Vault root in Hermes: `/mnt/obsidian/`
 - HR articles: `00知识库/HR知识/`, entry page `00知识库/HR知识入口.md`
 - AI articles: `00知识库/AI知识/`, entry page `00知识库/AI知识入口.md`
+- AI + HR articles: `00知识库/AI与HR应用/`, entry page `00知识库/AI与HR应用入口.md`
 - Business articles: `00知识库/商业知识/`, entry page `00知识库/商业知识入口.md`
 - 卡兹克 articles: `00知识库/卡兹克/`, entry page `00知识库/卡兹克入口.md`
 - 卡兹克 subfolders: `AI资讯`, `claude code`, `codex`, `prompt`, `skills`, `workbuddy`
@@ -52,7 +53,7 @@ When the user sends a screenshot of chat records, training sessions, or article 
 1. If the current model provider supports vision, use `vision_analyze` on the image directly.
 2. If vision fails (e.g. DeepSeek returns `unknown variant image_url, expected text`), fall back to OCR. See `references/ocr-fallback.md` for the full tesseract workflow — install, split, OCR with `chi_sim+eng`, and cleanup.
 3. After extracting text, reconstruct the message flow: group by sender, remove OCR noise, add paragraph breaks.
-4. If the content is a course/training share, use the training-summary template (add `source: 群聊截图` and `## 原文（课程分享记录）` section instead of `## 原文`). Classify by content topic (HR/AI/卡兹克) as normal.
+4. If the content is a course/training share, use the training-summary template (add `source: 群聊截图` and `## 原文（课程分享记录）` section instead of `## 原文`). Classify by content topic, including AI与HR应用 when both subjects are central.
 5. Upload to the appropriate vault folder via WebDAV as usual. Create the target directory with `MKCOL` if it doesn't exist (WebDAV PUT to a non-existent directory returns 409).
 
 ### Feishu Documents
@@ -72,17 +73,20 @@ Batch mode must not lower note quality. For every article, read enough of the fu
 
 ## Classify Destination
 
-Classify by **WeChat public account** (the `nickname` JS variable), not just by topic. See `references/classification-by-account.md` for the account-to-folder mapping and decision tree.
+Classify by the article's main subject. If AI and HR/OD/talent are jointly central, use AI与HR应用 regardless of the WeChat account (`nickname`). Use the account mapping as a default only when the topic is ambiguous. See `references/classification-by-account.md`.
 
 | Destination | Use When | Path |
 | --- | --- | --- |
 | HR | HR, OD, talent, compensation, performance, recruiting, HRBP, SSC, workforce effectiveness | `00知识库/HR知识/` |
 | AI | AI tools, AI workflows, prompt, agent, AI products, AI applications, AI-era personal development | `00知识库/AI知识/` |
+| AI与HR应用 | AI changes HR work or decisions in organization design, leadership, talent, recruiting, performance, compensation, workforce planning, or HR roles | `00知识库/AI与HR应用/` |
 | 商业知识 | business strategy, business models, growth, marketing, product strategy, operations, finance, capital markets, company cases, entrepreneurship, industry analysis | `00知识库/商业知识/` |
 | 卡兹克 | Author is 卡兹克 / 数字生命卡兹克, or the article belongs to that author collection | `00知识库/卡兹克/` |
 | 工作文档 | Internal company documents: meeting notes, project docs, BP reviews, HR operational docs | `01工作区/<project>/` |
 
-Priority: if an article is both 卡兹克 and AI, classify it under 卡兹克 first. Then choose the most relevant 卡兹克 subfolder. **But 卡兹克 personal-reflection / essay articles (心得分享类, numbered lists of reflections/lessons like 9条心得 / 6点特质 / 7点心得, AND 人物故事/采访随笔 like the 2026-08-24 两位高中生炼丹社 piece) go to the 卡兹克 ROOT directory — NOT a subfolder and NOT into the entry page** (verified 2026-08-20 on 《创业2年半后，想跟你分享关于AI组织的这7点心得。》; 2026-08-24 on 《两个16岁的高中生，共享了自己的显卡和API，想让全校同学都免费用上AI。》). Precedents all living at `00知识库/卡兹克/` root with NO wikilink in 卡兹克入口: 《用AI的这三年，想跟你分享这9条心得。》(2026-02), 《AI时代的人才，我觉得最重要的是这6点特质。》(2026-05), 《上周做了场内部分享，关于我做AI这三年来总结的内容创作方法论。》. 卡兹克入口 only indexes the 6 subfolder sections (and currently has no 全部文章索引) — root-level articles have no home there, so skip the entry-page update entirely. Distinguish from tool-specific tutorials (claude code/codex/prompt/skills/workbuddy subfolders) and from news/product-opinion pieces (AI资讯). If an article is both AI and HR, classify by the main reader problem: AI tool/workflow/product learning goes to AI; HR organization/talent/workforce problems go to HR. If an article is both business and HR or AI, classify by the dominant topic, not by incidental examples.
+Priority: if an article is both 卡兹克 and AI, classify it under 卡兹克 first. Then choose the most relevant 卡兹克 subfolder. **But 卡兹克 personal-reflection / essay articles (心得分享类, numbered lists of reflections/lessons like 9条心得 / 6点特质 / 7点心得, AND 人物故事/采访随笔 like the 2026-08-24 两位高中生炼丹社 piece) go to the 卡兹克 ROOT directory — NOT a subfolder and NOT into the entry page** (verified 2026-08-20 on 《创业2年半后，想跟你分享关于AI组织的这7点心得。》; 2026-08-24 on 《两个16岁的高中生，共享了自己的显卡和API，想让全校同学都免费用上AI。》). Precedents all living at `00知识库/卡兹克/` root with NO wikilink in 卡兹克入口: 《用AI的这三年，想跟你分享这9条心得。》(2026-02), 《AI时代的人才，我觉得最重要的是这6点特质。》(2026-05), 《上周做了场内部分享，关于我做AI这三年来总结的内容创作方法论。》. 卡兹克入口 only indexes the 6 subfolder sections (and currently has no 全部文章索引) — root-level articles have no home there, so skip the entry-page update entirely. Distinguish from tool-specific tutorials (claude code/codex/prompt/skills/workbuddy subfolders) and from news/product-opinion pieces (AI资讯). For new articles where AI and HR/OD/talent are jointly central, use AI与HR应用 regardless of the account's older placement. If an article is both business and HR or AI, classify by the dominant topic, not by incidental examples.
+
+AI mentioned only as context stays in HR知识; general AI tools without an HR use case stay in AI知识. An explicit user destination and the dedicated 卡兹克 author collection still take priority. Historical account examples describe already archived files, not destinations for new cross-domain articles. Do not move an existing article unless migration is requested; then use the reclassification workflow below.
 
 For internal company documents (工作文档), place them under `01工作区/<project>/` using the project name as folder — e.g. `01工作区/全棉时代/`, `01工作区/固生堂/`. These are raw work documents: skip the article template (no 摘要/核心要点/快速判断 sections), but always include YAML frontmatter with title, source, date, url, and relevant tags. Preserve the full original body.
 
@@ -90,7 +94,7 @@ For internal company documents (工作文档), place them under `01工作区/<pr
 
 For HR entry page:
 - HR资讯
-- HR的AI应用
+- HR的AI应用: legacy navigation link to `AI与HR应用入口.md`; place new cross-domain articles in the new entry page
 - hrBP相关
 - 组织发展
 - 人才发展
@@ -103,6 +107,12 @@ For AI entry page:
 - AI使用提效: prompts, workflows, usage methods, cost or token control
 - AI应用: field, organization, product, or work-scenario implementation cases
 - AI个人发展: personal capability, career, skill tree, product thinking, long-term self-development
+
+For AI与HR应用 entry page:
+- 组织与管理: AI-driven organization design, leadership, teams, and human-agent division of work
+- 人才与能力: talent standards, assessment, recruiting, skills, and workforce planning
+- HR职能与工具: AI in HR operations, hiring, performance, compensation, and HR tools
+- 转型实践与理念: HR role changes, enterprise adoption, change management, and decision frameworks
 
 For 商业知识 entry page:
 - 商业模式: value proposition, monetization, unit economics, platform/ecosystem logic, flywheels
@@ -211,6 +221,8 @@ Use the path relative to the vault when the file is in a nested folder or when d
 Entry-page path conventions differ per page — copy the existing style from the target entry page rather than guessing: AI知识入口 uses `[[AI知识/...]]` (no `00知识库/` prefix); 卡兹克入口 has FLIPPED between `[[卡兹克/<subfolder>/...]]` (no prefix) and `[[00知识库/卡兹克/<subfolder>/...]]` (with prefix) — as of 2026-08-11 the live page uses `00知识库/`-prefixed links throughout (e.g. `- [[00知识库/卡兹克/AI资讯/...|...]]`); HR知识入口 mixes `[[HR知识/...]]` and `[[00知识库/HR知识/...]]`; 商业知识入口 uses `[[商业知识/...]]` (no `00知识库/` prefix — e.g. `- [[商业知识/谈业务，要有逻辑、有结构|谈业务，要有逻辑、有结构]]`). Match the dominant style of the section you're inserting into (recent entries usually reflect the current convention).
 
 **卡兹克入口's structure has FLIPPED between versions — always read the live file first.** Earlier sessions recorded "no `## 全部文章索引`" (insert 1 link, verify count == 1), but a later session (2026-08-11) found the page WITH `## 全部文章索引` again — the two-link rule (count == 2) applies whenever that section exists. Before deciding 1-link vs 2-link, run `grep -n '^## \|^### '` on the WebDAV-fetched entry. When the page has the index section, insert one link in the matching subcategory section AND one in `## 全部文章索引`, then verify the full wikilink appears exactly 2×.
+
+When reclassifying an existing article, move its file and preserve its original body. Remove old entry-page links, add it once to the new topic section and all-articles index, update path-specific incoming links, and repair relative local image paths before verifying. Do not leave a second copy in the old folder.
 
 ⚠️ **Both HR知识入口 and 卡兹克入口 carry TWO full copies of the page structure (legacy duplication — two `## 分类说明`, two `## 主题分类`, two `## 全部文章索引` blocks). Verified 2026-08-18 on both.** The established convention is to update ONLY the FIRST copy: insert once in the first copy's subcategory section + once in the first copy's index block, then verify full-wikilink count == 2. The second copy is stale/abandoned — inserting there too pushes the count to 4. HR知识入口's first index header is literally `暂## 全部文章索引` (locate with substring `全部文章索引` or `暂##`); 卡兹克入口's first index header is a normal `## 全部文章索引`. Both pages' first copies use `00知识库/`-prefixed links (卡兹克) or `HR知识/`-prefixed (HR, recent entries) — match the live section style. 🔍 **Verification pitfall (fired 2026-08-20 on the 战略工具库 piece): to find the SECOND copy's H1 for first-copy-only counting, use `content.find('# HR知识入口', 1000)` — a bare `find('# HR知识入口')` returns position 0 (the file's own first H1), so `content[:second_h1].count(link)` yields 0 and makes a correct first-copy insertion look like it landed in the second copy.** Always pass a start offset past position 0 when locating the duplicate structure's boundary marker.
 
