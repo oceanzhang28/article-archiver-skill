@@ -911,7 +911,23 @@ Product-launch reviews from 卡兹克 (e.g. the DeepSeek Harness 速通 piece) r
 - **Numbered mode names → headings**: `1. 标准模式\n\n` → `### 1. 标准模式` (loop over mode names like 标准模式/PTC模式/极简模式/创造模式).
 - **Numbered plugin list with URL + description on separate lines**: `1. dsh-at-file\n\nhttps://github.com/…\n\n装完后…` → `1. **dsh-at-file**：https://github.com/…\n   装完后…` (name → bold, URL inline after `：`, description indented as the item body). Also fix stray inline-code artifacts like `一个持久Bash，一个\`文件编辑器。\`` → `一个持久 Bash、一个文件编辑器。` and `\`但是没事别日常用…\`` → plain text with `……` for `。。。`.
 - **Trailing `。` in title**: 卡兹克 titles can end with `。` (e.g. `从0到1带你速通DeepSeek Harness。`) — keep it in the filename, frontmatter, and H1 (matches vault convention `一夜之间，DeepSeek V4 Pro…斩杀线。.md`; full-width punct survives WebDAV fine).
-- **Footer**: keep the standard `### 以上，既然看到这里了…` + `> / 作者：卡兹克` + `> / 投稿或爆料…` convention (documented in the section below).
+- **Footer**: keep the standard `### 以上，既然看到这里了…` + `> / 作者：卡兹克` + `> 投稿或爆料…` convention (documented in the section below).
+- **Raw HTML `<table>` left in `body_markdown`** (model-launch reviews with a spec sheet, e.g. the `claude-opus-5-5` 参数表 in the 2026-09-23 三连发 piece): the extraction script does NOT convert 卡兹克's key-value tables — they land in the body verbatim as `<table>\n<tbody><tr><td>\n\n模型名\n\n</td><td>\`claude-opus-5-5\`</td>…</tr></tbody>\n</table>`. Convert `<tr>`/`<td>` pairs into a markdown table (no header row in the source; promote the first row's pair to the header) and strip the blank lines inside cells:
+```python
+ti, tj = body.find('<table>'), body.find('</table>') + len('</table>')
+rows = re.findall(r'<tr>(.*?)</tr>', body[ti:tj], re.S)
+cells = [[c.strip() for c in re.findall(r'<td>(.*?)</td>', r, re.S)] for r in rows]
+md = '| ' + ' | '.join(cells[0]) + ' |\n| --- | --- |\n' + ''.join('| ' + ' | '.join(r) + ' |\n' for r in cells[1:])
+body = body[:ti] + md.rstrip('\n') + body[tj:]
+```
+  Then verify no `<table`/`<td>` remains in the body and the new markdown table renders as a contiguous block. (Markdown tables are the vault convention for these spec sheets; leaving raw HTML makes Obsidian render them fine but breaks the "convert body HTML to semantic Markdown" rule.)
+- **Standalone-value line prefixed with `###` after a `…：` label** (same piece): a number the author bolded on its own line extracts as `GPT-6 Sol xhigh：\n\n### 33.2%。\n\n每个任务平均成本：\n\n### 0.27美元。` — the `###` is inline bold noise, NOT a heading. Fix:
+```python
+body = body.replace('GPT-6 Sol xhigh：\n\n### 33.2%。\n\n每个任务平均成本：\n\n### 0.27美元。',
+                    'GPT-6 Sol xhigh：**33.2%**。\n\n每个任务平均成本：**0.27美元**。')
+```
+  Generic shape: `^(label：)$` on its own line, blank line, `^### <值>。$` → merge to `label：**值**。`. Distinguish from the legit `### 一. …` / `### 二. …` Chinese-numeral section headings, which stay as headings (they are long, start with a numeral + `.`, and have real prose after them).
+- **Image alt text is mixed** (`![图像]` from `data-src` fallbacks vs `![image]` from the main path) — normalize `![图像]` → `![image]` for consistency (harmless, no content change).
 
 ### Nested code fences in prompt-collection articles → 4-backtick outer fence
 

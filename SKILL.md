@@ -84,7 +84,7 @@ Classify by the article's main subject. If AI and HR/OD/talent are jointly centr
 | 卡兹克 | Author is 卡兹克 / 数字生命卡兹克, or the article belongs to that author collection | `00知识库/卡兹克/` |
 | 工作文档 | Internal company documents: meeting notes, project docs, BP reviews, HR operational docs | `01工作区/<project>/` |
 
-Priority: if an article is both 卡兹克 and AI, classify it under 卡兹克 first. Then choose the most relevant 卡兹克 subfolder. **But 卡兹克 personal-reflection / essay articles (心得分享类, numbered lists of reflections/lessons like 9条心得 / 6点特质 / 7点心得, AND 人物故事/采访随笔 like the 2026-08-24 两位高中生炼丹社 piece) go to the 卡兹克 ROOT directory — NOT a subfolder and NOT into the entry page** (verified 2026-08-20 on 《创业2年半后，想跟你分享关于AI组织的这7点心得。》; 2026-08-24 on 《两个16岁的高中生，共享了自己的显卡和API，想让全校同学都免费用上AI。》). Precedents all living at `00知识库/卡兹克/` root with NO wikilink in 卡兹克入口: 《用AI的这三年，想跟你分享这9条心得。》(2026-02), 《AI时代的人才，我觉得最重要的是这6点特质。》(2026-05), 《上周做了场内部分享，关于我做AI这三年来总结的内容创作方法论。》. 卡兹克入口 only indexes the 6 subfolder sections (and currently has no 全部文章索引) — root-level articles have no home there, so skip the entry-page update entirely. Distinguish from tool-specific tutorials (claude code/codex/prompt/skills/workbuddy subfolders) and from news/product-opinion pieces (AI资讯). For new articles where AI and HR/OD/talent are jointly central, use AI与HR应用 regardless of the account's older placement. If an article is both business and HR or AI, classify by the dominant topic, not by incidental examples.
+Priority: if an article is both 卡兹克 and AI, classify it under 卡兹克 first. Then choose the most relevant 卡兹克 subfolder. **But 卡兹克 personal-reflection / essay articles (心得分享类, numbered lists of reflections/lessons like 9条心得 / 6点特质 / 7点心得, AND 人物故事/采访随笔 like the 2026-08-24 两位高中生炼丹社 piece) go to the 卡兹克 ROOT directory — NOT a subfolder and NOT into the entry page** (verified 2026-08-20 on 《创业2年半后，想跟你分享关于AI组织的这7点心得。》; 2026-08-24 on 《两个16岁的高中生，共享了自己的显卡和API，想让全校同学都免费用上AI。》). Precedents all living at `00知识库/卡兹克/` root with NO wikilink in 卡兹克入口: 《用AI的这三年，想跟你分享这9条心得。》(2026-02), 《AI时代的人才，我觉得最重要的是这6点特质。》(2026-05), 《上周做了场内部分享，关于我做AI这三年来总结的内容创作方法论。》. 卡兹克入口 indexes the subfolder sections **plus a `### 卡兹克` section for root-level articles** and a `## 全部文章索引` (re-verified 2026-09-23: 7 subcategory sections + index, duplicated page structure) — so root-level 心得分享类 / 人物故事 archives are now linkable there too; only skip the entry-page update if a live grep shows the target section genuinely absent. The earlier "no home, skip the entry-page update entirely" rule was based on a page version that lacked both the `### 卡兹克` section and the index. Distinguish from tool-specific tutorials (claude code/codex/prompt/skills/workbuddy subfolders) and from news/product-opinion pieces (AI资讯). For new articles where AI and HR/OD/talent are jointly central, use AI与HR应用 regardless of the account's older placement. If an article is both business and HR or AI, classify by the dominant topic, not by incidental examples.
 
 AI mentioned only as context stays in HR知识; general AI tools without an HR use case stay in AI知识. An explicit user destination and the dedicated 卡兹克 author collection still take priority. Historical account examples describe already archived files, not destinations for new cross-domain articles. Do not move an existing article unless migration is requested; then use the reclassification workflow below.
 
@@ -131,6 +131,11 @@ For 卡兹克 entry page:
 - prompt
 - skills
 - workbuddy
+- 卡兹克（根目录文章——见下方 2026-09-23 状态）
+
+⚠️ **状态 2026-09-23（Claude Opus 5.5 / GPT-6 Sol 三连发 piece）**: the live `卡兹克入口.md` first copy has **SEVEN** sections under `## 主题分类` — AI资讯 / claude code / codex / prompt / skills / workbuddy / **卡兹克** — plus a first-copy `## 全部文章索引`. The 7th section `### 卡兹克` holds root-level (no-subfolder) articles (e.g. 平均每天Vibe Coding 16小时后…, Skills的最正确用法…, 汉化组…), so root-level 心得分享类 archives DO have a home there now; do not skip the entry-page update by default — grep the live page first. First-copy-only insertion verified this session: file was 23118 chars, the duplicate structure's H1 starts at `content.find('# 卡兹克知识入口', 1000)` ≈ 10949, and the standard 2-link check (subcategory + `## 全部文章索引`, full-wikilink count == 2, both in `result[:actual_second]`, conflict-marker count unchanged at 4) passed cleanly. All first-copy links use the `00知识库/卡兹克/...` prefix.
+
+⚠️ **卡兹克 frontmatter is NOT uniform across the subfolder** — the last 2–3 files in the target subfolder may use different shapes. Live examples in `00知识库/卡兹克/AI资讯/` (2026-09-23): 今夜的荣光属于MiMo V2.6。 uses `title/author/source(=url)/published/archived/tags:/note:`; GPT-6 Astra全面解析 and 智谱GLM-5.3-Flash use the standard template `title/author/source(=数字生命卡兹克（微信公众号）)/date/url/tags: article, wechat[, khazix]`. Match the DOMINANT recent style (the standard template won 2-of-3) rather than copying whichever single file you happened to open; the Article Template is the safe default.
 
 If an entry page is missing or empty, create a simple category structure matching the HR/AI entry-page style: title, short organizing principle, `## 分类说明`, `## 主题分类`, subcategory headings, and `## 全部文章索引`.
 
@@ -387,6 +392,23 @@ body = re.sub(r'^(\d{2})｜(.+)$', r'### \1｜\2', body, flags=re.M)   # keeps t
 ```
 
 Check which variant is live by grepping the extracted body for `^\d{2}` lines before choosing a regex — running the wrong one silently no-ops (no error, headings stay as plain prose lines).
+
+### `NN · ENGLISH` eyebrow + subtitle-on-next-line (Meta Muse 组织重构 piece, 2026-09-26)
+
+A fourth numbering variant: the section eyebrow extracts as `01 · PRODUCT` (two digits + ASCII middle dot + ALL-CAPS English label) on its own line, a blank line, then the Chinese subtitle. Merge both into one heading (keep the `｜` style used by the `01｜标题` variant):
+
+```python
+body, n = re.subn(r'^(\d{2}) · ([A-Z& ]+)\n\n([^\n]+)$', lambda m: f'### {m.group(1)} · {m.group(2)}｜{m.group(3)}', body, flags=re.M)
+# 01 · PRODUCT + 先说清楚：Muse到底是什么 -> ### 01 · PRODUCT｜先说清楚：Muse到底是什么
+```
+
+Inner playbook items in the closing section use the fullwidth-bar form without a space (`01｜把小核心放在最稀缺的判断上` ×4) → demote to `####` so they nest under `### 07 · PLAYBOOK`:
+
+```python
+body = re.sub(r'^(\d{2}｜[^\n]+)$', r'#### \1', body, flags=re.M)
+```
+
+The references block header is a bare line `资料来源与口径说明` (not `### 资料来源：`) → `### 资料来源与口径说明`; the blockquote callouts (`> 核心判断` / `> MSL 四个单元` / `> 内部试用闭环` / the 模型研发慢→回调 mapping) extract as label-paragraph + content-paragraph pairs and are KEPT as separate blockquotes (matches the 组织大脑 precedent); tail follows the standard splice — drop `📍关注AI组织进化论` + the 极简AI领导力 course promo, keep `其他推荐阅读：`. This piece's extraction is otherwise clean (no inline `###`, no standalone punctuation, no `\xa0` beyond `Sensor\xa0Tower`).
 
 ### `> 结语` closing header → `### 结语`
 
@@ -869,7 +891,7 @@ This skill's public home is `github.com/oceanzhang28/article-archiver-skill` (SS
 ## References
 
 - `references/wechat-extraction.md`: Fetching WeChat article HTML, metadata extraction, and script usage.
-- `references/wechat-formatting.md`: WeChat HTML-to-Markdown formatting rules and post-extraction checks. Includes account-specific artifacts: 润米商城/刘润 (第NNNN篇原创文章 tail marker, 最后的话 heading, promo footer collapse), TRAE.ai (plugin lists, 更多技巧 numbered items order-dependence, 小技巧 callouts), AI与组织领导力跃迁/罗明 (header strip, inline-###→bold incl. em-dash `——` continuation merges, section numbers, tail promo cut + sign-off re-append), 高绩效HR, AI组织进化论, 赛普咨询, 首席组织官, 麦肯锡, 书图与手记, 物业管理实践, 卡兹克, Datawhale.
+- `references/wechat-formatting.md`: WeChat HTML-to-Markdown formatting rules and post-extraction checks. Includes account-specific artifacts: 润米商城/刘润 (第NNNN篇原创文章 tail marker, 最后的话 heading, promo footer collapse), TRAE.ai (plugin lists, 更多技巧 numbered items order-dependence, 小技巧 callouts), AI与组织领导力跃迁/罗明 (header strip, inline-###→bold incl. em-dash `——` continuation merges, section numbers, tail promo cut + sign-off re-append), 高绩效HR, AI组织进化论, 赛普咨询, 首席组织官, 麦肯锡, 书图与手记, 物业管理实践, 卡兹克 (spec-sheet `<table>` HTML → markdown table; `### 值。` inline-bold lines after a `…：` label; `![图像]` alt normalization), Datawhale.
 - `references/summary-guidelines.md`: Summary and note-writing rules.
 - `references/knowledge-card-format.md`: Knowledge card template, frontmatter, and numbering rules.
 - `references/extraction-script.py`: Standalone WeChat extraction script.
